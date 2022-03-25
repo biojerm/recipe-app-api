@@ -12,4 +12,4 @@
           run: docker-compose -f "docker-compose.yml" up -d --build
      
         - name: Run tests
-          run: docker-compose run app sh -c "python3 manage.py test && flake8"
+          run: docker-compose run app sh -c "pytest && flake8"
