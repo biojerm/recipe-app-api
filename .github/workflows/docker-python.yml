@@ -1,5 +1,5 @@
     name: "Run tests via docker-compose"
-    on: push
+    on: [push]
     jobs:
       docker:
         runs-on: ubuntu-latest
