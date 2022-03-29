@@ -8,12 +8,15 @@ from rest_framework import status
 
 CREATE_USER_URL = reverse("user:create")
 
+
 def create_user(**params):
     return get_user_model().objects.create_user(**params)
+
 
 @pytest.fixture
 def api_client():
     return APIClient()
+
 
 class TestPublicUserAPITests:
     """Test the users API (public)"""
@@ -43,7 +46,6 @@ class TestPublicUserAPITests:
 
         res = api_client.post(CREATE_USER_URL, payload)
         assert res.status_code == status.HTTP_400_BAD_REQUEST
-
 
     @pytest.mark.django_db
     def test_passwords_are_too_short(self, api_client):
