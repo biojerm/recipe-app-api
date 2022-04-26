@@ -8,6 +8,7 @@ from rest_framework import status
 
 CREATE_USER_URL = reverse("user:create")
 TOKEN_URL = reverse("user:token")
+ME_URL = reverse("user:me")
 
 
 def create_user(**params):
@@ -15,8 +16,27 @@ def create_user(**params):
 
 
 @pytest.fixture
+def user():
+    """A sample user for testing"""
+    new_user = create_user(
+        email='test@user.com',
+        password='testspass',
+        name='name',
+    )
+    return new_user
+
+
+@pytest.fixture
 def api_client():
     return APIClient()
+
+
+@pytest.fixture
+def user_api_client(user):
+    """An api client with a logged in user"""
+    client = APIClient()
+    client.force_authenticate(user)
+    return client
 
 
 class TestPublicUserAPITests:
@@ -101,3 +121,44 @@ class TestPublicUserAPITests:
 
         assert 'token'not in res.data
         assert res.status_code == status.HTTP_400_BAD_REQUEST
+
+    @pytest.mark.django_db
+    def test_retrieve_user_unauthorized(self, api_client):
+        """Test that authentication is required for users"""
+        res = api_client.get(ME_URL)
+
+        assert res.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+class TestPrivateUserApi:
+    """Test API requetst that require authenication"""
+
+    @pytest.mark.django_db
+    def test_retrieve_profile_success(self, user_api_client, user):
+        """Test retrieving profile for logged in used"""
+        res = user_api_client.get(ME_URL)
+
+        assert res.status_code == status.HTTP_200_OK
+        assert res.data == {
+            "name": user.name,
+            "email": user.email
+        }
+
+    @pytest.mark.django_db
+    def test_post_me_not_allowed(self, user_api_client):
+        """Test that post is note allowed on the ME_URL"""
+        res = user_api_client.post(ME_URL, {})
+        assert res.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+
+    @pytest.mark.django_db
+    def test_update_user_profile(self, user_api_client, user):
+        """Test that post is note allowed on the ME_URL"""
+        payload = {
+            'name': 'new_name', 'password': "newpass"
+        }
+        res = user_api_client.patch(ME_URL, payload)
+        user.refresh_from_db()
+
+        assert user.name == payload['name']
+        assert user.check_password(payload['password'])
+        assert res.status_code == status.HTTP_200_OK
