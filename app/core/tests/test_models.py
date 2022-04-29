@@ -58,3 +58,12 @@ class TestModel():
         )
 
         assert str(tag) == tag.name
+
+    @pytest.mark.django_db
+    def test_ingredient_str(self):
+        """Test the tag string representation"""
+        ingredients = models.Ingredient.objects.create(
+            user=sample_user(),
+            name='Cucumber'
+        )
+        assert str(ingredients) == ingredients.name
