@@ -55,7 +55,6 @@ class TestPublicIngredientApi:
 class TestPrivateIngredientApi:
     """Test the private ingredients api"""
 
-
     @pytest.mark.django_db
     def test_retrieve_ingredient_list(self, user, user_api_client):
         """Test retrieve ingredent list"""
@@ -69,7 +68,6 @@ class TestPrivateIngredientApi:
 
         assert res.status_code == status.HTTP_200_OK
         assert res.data == serializer.data
-
 
     @pytest.mark.django_db
     def test_ingredients_limited_to_user(self, user, user_api_client):
@@ -85,5 +83,22 @@ class TestPrivateIngredientApi:
         assert len(res.data) == 1
         assert res.data[0]['name'] == ingredient.name
 
+    @pytest.mark.django_db
+    def test_create_ingredient_successful(self, user, user_api_client):
+        """Test create a new ingredient"""
+        payload = {'name': 'Cabbage'}
+        user_api_client.post(INGREDIENT_URL, payload)
 
+        exists = Ingredient.objects.filter(
+            user=user,
+            name=payload['name']
+        ).exists()
+        assert exists
 
+    @pytest.mark.django_db
+    def test_create_ingredient_invalid(self, user_api_client):
+        """Test creating invalid ingredient fails"""
+        payload = {'name': ''}
+        res = user_api_client.post(INGREDIENT_URL, payload)
+
+        assert res.status_code == status.HTTP_400_BAD_REQUEST
