@@ -68,7 +68,6 @@ class TestModel():
         )
         assert str(ingredients) == ingredients.name
 
-
     @pytest.mark.django_db
     def test_recipe_str(self):
         """Test teh recipe string representation"""
