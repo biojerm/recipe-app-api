@@ -123,3 +123,61 @@ class TestPrivateRecipeAPI:
 
         serializer = RecipeDetailSerializer(recipe)
         assert res.data == serializer.data
+
+    @pytest.mark.django_db
+    def test_create_basic_recipe(self, user_api_client):
+        """create basic recipe"""
+        payload = {
+            'title': 'Choclate cheesecake',
+            'time_minutes': 30,
+            'price': 5.00
+        }
+        res = user_api_client.post(RECIPES_URL, payload)
+
+        assert res.status_code == status.HTTP_201_CREATED
+        recipe = Recipe.objects.get(id=res.data['id'])
+
+        for key in payload.keys():
+            assert payload[key] == getattr(recipe, key)
+
+    @pytest.mark.django_db
+    def test_create_recipe_with_tags(self, user, user_api_client):
+        """Test creating a recipe with tags"""
+        tag1 = sample_tag(sample_user=user, name='Vegan')
+        tag2 = sample_tag(sample_user=user, name='Dessert')
+
+        payload = {
+            'title': 'Avocado Lime Cheescake',
+            'tags': [tag1.id, tag2.id],
+            'time_minutes': 60,
+            'price': 20.00
+        }
+
+        res = user_api_client.post(RECIPES_URL, payload)
+        assert res.status_code == status.HTTP_201_CREATED
+        recipe = Recipe.objects.get(id=res.data['id'])
+        tags = recipe.tags.all()
+        assert tags.count() == 2
+        assert tag1 in tags
+        assert tag2 in tags
+
+    @pytest.mark.django_db
+    def test_create_recipe_with_ingredients(self, user, user_api_client):
+        """Test creating recipe with ingredients"""
+        ingredient1 = sample_ingredient(sample_user=user, name='prawns')
+        ingredient2 = sample_ingredient(sample_user=user, name='ginger')
+        payload = {
+            'title': 'Thai prawn red curry',
+            'ingredients': [ingredient1.id, ingredient2.id],
+            'time_minutes': 20,
+            'price': 7.00
+        }
+
+        res = user_api_client.post(RECIPES_URL, payload)
+        assert res.status_code == status.HTTP_201_CREATED
+        recipe = Recipe.objects.get(id=res.data['id'])
+        ingredients = recipe.ingredients.all()
+
+        assert ingredients.count() == 2
+        assert ingredient1 in ingredients
+        assert ingredient2 in ingredients
