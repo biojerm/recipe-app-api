@@ -1,3 +1,8 @@
+import tempfile
+import os
+
+from PIL import Image
+
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
@@ -14,6 +19,11 @@ from recipe.serializers import RecipeSerializer, RecipeDetailSerializer
 
 
 RECIPES_URL = reverse('recipe:recipe-list')
+
+
+def image_upload_url(recipe_id):
+    """Return URL for recipe image upload"""
+    return reverse('recipe:recipe-upload-image', args=[recipe_id])
 
 
 def detail_url(recipe_id):
@@ -69,6 +79,15 @@ def user_api_client(user):
     client = APIClient()
     client.force_authenticate(user)
     return client
+
+
+@pytest.fixture
+def recipe_fixture(user, user_api_client):
+    recipe = sample_recipe(user)
+
+    yield recipe
+
+    recipe.image.delete()
 
 
 class TestPublicRecipeApi:
@@ -222,3 +241,32 @@ class TestPrivateRecipeAPI:
 
         tags = recipe.tags.all()
         assert len(tags) == 0
+
+
+class TestRecipeImageUpload:
+
+    @pytest.mark.django_db
+    def test_upload_image_to_recipe(self, recipe_fixture, user_api_client):
+        """Test uploading an image to recipe"""
+        url = image_upload_url(recipe_fixture.id)
+
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as ntf:
+            img = Image.new('RGB', (10, 10))
+            img.save(ntf, format='JPEG')
+            ntf.seek(0)
+
+            res = user_api_client.post(url, {'image': ntf}, format='multipart')
+
+            recipe_fixture.refresh_from_db()
+            assert res.status_code == status.HTTP_200_OK
+            assert 'image' in res.data
+            assert os.path.exists(recipe_fixture.image.path)
+
+    @pytest.mark.django_db
+    def test_upload_image_bad_request(self, recipe_fixture, user_api_client):
+        """Test uploading an invaild image"""
+        url = image_upload_url(recipe_fixture.id)
+        res = user_api_client.post(
+            url, {'image': 'not_image'}, format='multipart')
+
+        assert res.status_code == status.HTTP_400_BAD_REQUEST
