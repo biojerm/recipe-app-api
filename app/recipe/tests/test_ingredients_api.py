@@ -7,7 +7,7 @@ import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Ingredient
+from core.models import Ingredient, Recipe
 
 from recipe.serializers import IngredientSerializer
 
@@ -102,3 +102,52 @@ class TestPrivateIngredientApi:
         res = user_api_client.post(INGREDIENT_URL, payload)
 
         assert res.status_code == status.HTTP_400_BAD_REQUEST
+
+    @pytest.mark.django_db
+    def test_retrieve_ingredients_assigned_to_recipes(
+        self, user, user_api_client
+    ):
+        """Test filtering ingredient by those assgned to recipes"""
+        ingredient1 = Ingredient.objects.create(user=user, name="apples")
+        ingredient2 = Ingredient.objects.create(user=user, name="Turkey")
+
+        recipe=Recipe.objects.create(
+            title="apple crumble",
+            time_minutes=5,
+            price=10,
+            user=user
+        )
+
+        recipe.ingredients.add(ingredient1)
+        res = user_api_client.get(INGREDIENT_URL, {'assigned_only':1})
+
+        serializer1 = IngredientSerializer(ingredient1)
+        serializer2 = IngredientSerializer(ingredient2)
+        assert serializer1.data in res.data
+        assert serializer2.data not in res.data
+
+    @pytest.mark.django_db
+    def test_retrieve_ingredients_assigned_unique(self, user, user_api_client):
+        """Test filtering ingredients by assigned returns unique items"""
+        ingredient= Ingredient.objects.create(user=user, name='Eggs')
+        Ingredient.objects.create(user=user, name='Cheese')
+
+        recipe1 = Recipe.objects.create(
+            title="poached eggs",
+            time_minutes=5,
+            price=1,
+            user=user
+        )
+
+        recipe1.ingredients.add(ingredient)
+        recipe2 = Recipe.objects.create(
+            title="scrambled eggs",
+            time_minutes=5,
+            price=1,
+            user=user
+        )
+        recipe2.ingredients.add(ingredient)
+
+        res = user_api_client.get(INGREDIENT_URL, {"assigned_only":1})
+
+        assert len(res.data) == 1
