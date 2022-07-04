@@ -111,7 +111,7 @@ class TestPrivateIngredientApi:
         ingredient1 = Ingredient.objects.create(user=user, name="apples")
         ingredient2 = Ingredient.objects.create(user=user, name="Turkey")
 
-        recipe=Recipe.objects.create(
+        recipe = Recipe.objects.create(
             title="apple crumble",
             time_minutes=5,
             price=10,
@@ -119,7 +119,7 @@ class TestPrivateIngredientApi:
         )
 
         recipe.ingredients.add(ingredient1)
-        res = user_api_client.get(INGREDIENT_URL, {'assigned_only':1})
+        res = user_api_client.get(INGREDIENT_URL, {'assigned_only': 1})
 
         serializer1 = IngredientSerializer(ingredient1)
         serializer2 = IngredientSerializer(ingredient2)
@@ -129,7 +129,7 @@ class TestPrivateIngredientApi:
     @pytest.mark.django_db
     def test_retrieve_ingredients_assigned_unique(self, user, user_api_client):
         """Test filtering ingredients by assigned returns unique items"""
-        ingredient= Ingredient.objects.create(user=user, name='Eggs')
+        ingredient = Ingredient.objects.create(user=user, name='Eggs')
         Ingredient.objects.create(user=user, name='Cheese')
 
         recipe1 = Recipe.objects.create(
@@ -148,6 +148,6 @@ class TestPrivateIngredientApi:
         )
         recipe2.ingredients.add(ingredient)
 
-        res = user_api_client.get(INGREDIENT_URL, {"assigned_only":1})
+        res = user_api_client.get(INGREDIENT_URL, {"assigned_only": 1})
 
         assert len(res.data) == 1

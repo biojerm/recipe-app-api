@@ -103,7 +103,7 @@ class TestPrivateTagsApi:
         assert res.status_code == status.HTTP_400_BAD_REQUEST
 
     @pytest.mark.django_db
-    def test_retrieve_tags_assigned_to_recipes(self,user, user_api_client):
+    def test_retrieve_tags_assigned_to_recipes(self, user, user_api_client):
         """Test filtering tags bythose assigned to recipes"""
         tag1 = Tag.objects.create(user=user, name='Breakfast')
         tag2 = Tag.objects.create(user=user, name='Lunch')
