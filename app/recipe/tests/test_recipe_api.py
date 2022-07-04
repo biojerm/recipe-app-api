@@ -270,3 +270,50 @@ class TestRecipeImageUpload:
             url, {'image': 'not_image'}, format='multipart')
 
         assert res.status_code == status.HTTP_400_BAD_REQUEST
+
+    @pytest.mark.django_db
+    def test_filter_recipes_by_tags(self, user, user_api_client):
+        """Test returning recipes with specific tags"""
+        recipe1 = sample_recipe(user=user, title='Thai vegetable curry')
+        recipe2 = sample_recipe(user=user, title='Aubergine with tahini')
+        tag1 = sample_tag(sample_user=user, name='Vegan')
+        tag2 = sample_tag(sample_user=user, name='Vegetarian')
+        recipe1.tags.add(tag1)
+        recipe2.tags.add(tag2)
+        recipe3 = sample_recipe(user=user, title='Fish and chips')
+        res = user_api_client.get(
+            RECIPES_URL,
+            {'tags': f"{tag1.id},{tag2.id}"}
+        )
+
+        serializer1 = RecipeSerializer(recipe1)
+        serializer2 = RecipeSerializer(recipe2)
+        serializer3 = RecipeSerializer(recipe3)
+
+        assert serializer1.data in res.data
+        assert serializer2.data in res.data
+        assert serializer3.data not in res.data
+
+    @pytest.mark.django_db
+    def test_filter_recipes_by_ingredients(self, user, user_api_client):
+        """Test returning recipes with specific ingredients"""
+        recipe1 = sample_recipe(user=user, title='Posh beans on toast')
+        recipe2 = sample_recipe(user=user, title='Italian chicken')
+        ingredient1 = sample_ingredient(sample_user=user, name='Feta cheese')
+        ingredient2 = sample_ingredient(sample_user=user, name='Chicken')
+        recipe1.ingredients.add(ingredient1)
+        recipe2.ingredients.add(ingredient2)
+
+        recipe3 = sample_recipe(user=user, title='Steak')
+        res = user_api_client.get(
+            RECIPES_URL,
+            {'ingredients': f"{ingredient1.id},{ingredient2.id}"}
+        )
+
+        serializer1 = RecipeSerializer(recipe1)
+        serializer2 = RecipeSerializer(recipe2)
+        serializer3 = RecipeSerializer(recipe3)
+
+        assert serializer1.data in res.data
+        assert serializer2.data in res.data
+        assert serializer3.data not in res.data
